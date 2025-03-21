@@ -172,3 +172,10 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+
+# pipenv environment file
+*.csv
+*.zip
+*.tar.gz
+*.tgz
+*.tar.bz2
