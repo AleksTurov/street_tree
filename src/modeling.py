@@ -173,7 +173,7 @@ class TabularNN(nn.Module):
         return preds
     
     @classmethod
-    def load_model(cls, model_path, X_train, y_train, X_val, y_val):
+    def load_model(cls, model_path):
         """Загружает модель из файла с восстановлением структуры."""
         checkpoint = torch.load(model_path)
 
@@ -186,14 +186,12 @@ class TabularNN(nn.Module):
         logger.info(f"Loading model with input_dim={input_dim}, hidden_dims={hidden_dims}, output_dim={output_dim}")
         logger.info(f"Loaded target mapping: {target_mapping}")
 
-        # Инициализируем новую модель
-        model = cls(
-            X_train=X_train,
-            y_train=y_train,
-            X_val=X_val,
-            y_val=y_val,
-            hidden_dims=hidden_dims
-        )
+        # Create dummy data with the correct shape
+        dummy_X = pd.DataFrame(np.zeros((1, input_dim)))
+        dummy_y = pd.Series([0, 1, 2])  # All possible class labels
+
+        # Initialize the model using dummy data
+        model = cls(dummy_X, dummy_y, dummy_X, dummy_y, hidden_dims=hidden_dims)
         model.load_state_dict(checkpoint['model_state_dict'])
         model.eval()
         logger.info(f"Model loaded successfully from {model_path}")

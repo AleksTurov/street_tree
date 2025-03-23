@@ -127,6 +127,8 @@ def load_and_encode_categorical(df, categorical_columns, model_path):
         if le is None:
             logger.warning(f"LabelEncoder не найден для столбца: {column}")
             continue  # Пропускаем этот столбец
+        # Преобразуем значения в колонке с помощью LabelEncoder
+        df[column] = le.transform(df[column])
 
     logger.info("Категориальные признаки преобразованы с использованием загруженных LabelEncoders")
     return df
@@ -150,6 +152,8 @@ def split_and_save(X, y, output_dir, size, name_train, name_test):
     X_test.assign(health=y_test).to_csv(f"{output_dir}/{name_test}", index=False)
 
     logger.info("Data successfully saved to: %s", output_dir)
+    logger.info("Train data shape: %s", X_train.shape)
+    logger.info("Test data shape: %s", X_test.shape)
 
     return X_train, X_test, y_train, y_test
 
