@@ -1,167 +1,162 @@
+import pandas as pd
+
 import torch
-from torch import nn, optim
+import torch.nn as nn
+import torch.optim as optim
+import torch.nn.functional as F
 from torch.utils.data import DataLoader, TensorDataset
 from sklearn.metrics import accuracy_score, f1_score, roc_auc_score, confusion_matrix
 from src.utils import logger
+from sklearn.utils.class_weight import compute_class_weight
 import numpy as np
-from focal_loss import FocalLoss
 
-class DeepLearningModel:
+class TabularNN(nn.Module):
     """
-    📊 Обоснование выбора архитектуры:
+    Описание архитектуры:
 
-    Мы используем Multilayer Perceptron (MLP) — многослойную нейронную сеть, которая подходит для обработки табличных данных.
+    1. Входной слой:
+    - Модель принимает табличные данные на вход, где каждая строка представляет образец, а столбцы — признаки.
 
-    1. Характер данных:
-        - Данные о деревьях (например, tree_dbh, borough, curb_loc) — табличные числовые и категориальные признаки.
-        - MLP хорошо справляется с такими данными, когда признаки независимы и не имеют пространственной структуры.
+    2. Скрытые слои:
+    - Используются полносвязные слои (Linear) с Batch Normalization и ReLU активацией для выявления сложных взаимодействий между признаками.
+    - Batch Normalization стабилизирует обучение и ускоряет сходимость.
+    - Dropout применяется для регуляризации и предотвращения переобучения.
 
-    2. Сложность задачи:
-        - Это многоклассовая классификация (Good, Fair, Poor).
-        - MLP с CrossEntropyLoss и LogSoftmax подходит для решения таких задач.
+    3. Выходной слой:
+    - Последний Linear-слой генерирует вероятности классов, соответствующие количеству целевых классов.
 
-    🏗️ Архитектура модели:
-    - Входной слой (input_size): Размерность равна числу признаков.
-    - Скрытые слои:
-        - 256, 128, 64 – оптимально для сложных зависимостей и достаточной глубины.
-        - BatchNorm – нормализует выходы и ускоряет сходимость.
-        - Dropout (0.3) – предотвращает переобучение.
-    - Выходной слой:
-        - LogSoftmax(dim=1) – преобразует выходы в вероятности для многоклассовой классификации.
+    4. Стратегия обучения:
+    - Используется CrossEntropyLoss с весами классов для учета дисбаланса классов.
+    - Модель отслеживает метрику AUC-ROC и сохраняет лучшую модель по её наибольшему значению.
+    - Раннее прекращение (early stopping) используется для предотвращения переобучения и экономии вычислительных ресурсов.
 
-    📈 Оптимизация и улучшение обучения:
-    - Class Weights – учитывает дисбаланс классов в функции потерь (CrossEntropyLoss).
-    - Adam Optimizer – адаптивный метод оптимизации с learning_rate=0.0005.
-    - ReduceLROnPlateau – снижает learning_rate, если модель перестает улучшаться (на val_loss).
+    Эта архитектура подходит для табличных данных с несколькими классами и эффективно обрабатывает дисбаланс классов.
     """
+    def __init__(self, X_train, y_train, X_val, y_val, hidden_dims, dropout=0.3, patience=5, model_path='best_model.pth'):
+        super(TabularNN, self).__init__()
 
-    def __init__(self, input_size, hidden_layers, output_size=3, learning_rate=0.0005, model_dir="models", y_train=None):
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        logger.info(f"Используем устройство: {self.device}")
+        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-        self.model = self._build_model(input_size, hidden_layers, output_size).to(self.device)
+        self.input_dim = X_train.shape[1]
+        self.output_dim = len(np.unique(y_train))
+        self.hidden_dims = hidden_dims
+        self.dropout = dropout
+        self.patience = patience
+        self.model_path = model_path
 
-        # Рассчитываем веса классов для балансировки
-        if y_train is not None:
-            y_train = np.array(y_train, dtype=int)
-            if len(y_train) > 0 and len(np.unique(y_train)) > 1:
-                class_counts = np.bincount(y_train)
-                class_weights = 1.0 / class_counts
-                weights = torch.tensor(class_weights, dtype=torch.float32).to(self.device)
-                logger.info(f"Веса классов: {class_weights}")
-            else:
-                logger.error("Недостаточно классов для расчёта весов.")
-                weights = None
-        else:
-            weights = None
-            logger.error("Некорректный формат y_train: проверь тип и форму.")
-
-    
-        self.criterion = FocalLoss(alpha=class_weights, gamma=2)
-        self.optimizer = optim.AdamW(self.model.parameters(), lr=learning_rate)
-
-        # Добавляем scheduler для адаптивного изменения learning rate
-        self.scheduler = optim.lr_scheduler.ReduceLROnPlateau(self.optimizer, mode='min', factor=0.5, patience=5)
-
-        # Директория для сохранения моделей
-        self.model_dir = model_dir
-        os.makedirs(self.model_dir, exist_ok=True)
-
-    def _build_model(self, input_size, hidden_layers, output_size):
-        layers = [nn.Linear(input_size, hidden_layers[0]), nn.BatchNorm1d(hidden_layers[0]), nn.ReLU(), nn.Dropout(0.3)]
-        for in_size, out_size in zip(hidden_layers[:-1], hidden_layers[1:]):
-            layers.append(nn.Linear(in_size, out_size))
-            layers.append(nn.BatchNorm1d(out_size))
+        layers = []
+        prev_dim = self.input_dim
+        for dim in self.hidden_dims:
+            layers.append(nn.Linear(prev_dim, dim))
+            layers.append(nn.BatchNorm1d(dim))
             layers.append(nn.ReLU())
-            layers.append(nn.Dropout(0.4))
-        layers.append(nn.Linear(hidden_layers[-1], output_size))
-        layers.append(nn.LogSoftmax(dim=1))
-        return nn.Sequential(*layers)
+            layers.append(nn.Dropout(self.dropout))
+            prev_dim = dim
+        layers.append(nn.Linear(prev_dim, self.output_dim))
+        self.model = nn.Sequential(*layers).to(self.device)
 
-    def _prepare_data(self, X, y):
-        X_tensor = torch.tensor(X.values, dtype=torch.float32).to(self.device)
-        y_tensor = torch.tensor(y.values, dtype=torch.long).to(self.device)
-        return TensorDataset(X_tensor, y_tensor)
+        self.train_loader = self._create_dataloader(X_train, y_train)
+        self.val_loader = self._create_dataloader(X_val, y_val, shuffle=False)
 
-    def train(self, X_train, y_train, X_val, y_val, num_epochs=100, batch_size=64):
-        logger.info("Начинаем обучение модели глубокого обучения")
+    def _create_dataloader(self, X, y, batch_size=64, shuffle=True):
+        if isinstance(X, pd.DataFrame):
+            X = X.values
+        if isinstance(y, pd.Series):
+            y = y.values
 
-        train_dataset = self._prepare_data(X_train, y_train)
-        val_dataset = self._prepare_data(X_val, y_val)
+        dataset = TensorDataset(torch.tensor(X, dtype=torch.float32), torch.tensor(y, dtype=torch.long))
+        return DataLoader(dataset, batch_size=batch_size, shuffle=shuffle)
 
-        train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
-        val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
+    def _compute_class_weights(self, y):
+        class_weights = compute_class_weight('balanced', classes=np.unique(y), y=y)
+        return torch.tensor(class_weights, dtype=torch.float32).to(self.device)
 
-        best_val_loss = float('inf')
+    def _format_confusion_matrix(self, cm):
+        return '\n'.join(['\t'.join(map(str, row)) for row in cm])
 
-        for epoch in range(num_epochs):
-            train_loss = self._train_one_epoch(train_loader)
-            val_loss, metrics = self._validate(val_loader)
+    def train_model(self, epochs=50, learning_rate=0.001, batch_size=64):
+        class_weights = self._compute_class_weights(self.train_loader.dataset.tensors[1].numpy())
+        criterion = nn.CrossEntropyLoss(weight=class_weights)
+        optimizer = torch.optim.Adam(self.parameters(), lr=learning_rate)
 
-            logger.info(f"Эпоха {epoch + 1}/{num_epochs}, Потеря при обучении: {train_loss:.4f}, Потеря при валидации: {val_loss:.4f}")
-            logger.info(f"Accuracy: {metrics['accuracy']:.4f}, F1-Score: {metrics['f1_score']:.4f}, AUC-ROC: {metrics['auc_roc']:.4f}")
-            logger.info(f"Confusion Matrix:\n{metrics['conf_matrix']}")
+        best_auc_roc = 0
+        patience_counter = 0
 
-            self.scheduler.step(val_loss)
+        for epoch in range(1, epochs + 1):
+            self.train()
+            total_loss = 0
 
-            if val_loss < best_val_loss:
-                best_val_loss = val_loss
-                self._save_model("best_model.pth")
-
-        logger.info("Обучение завершено")
-
-    def _train_one_epoch(self, train_loader):
-        self.model.train()
-        total_loss = 0
-
-        for X_batch, y_batch in train_loader:
-            X_batch, y_batch = X_batch.to(self.device), y_batch.to(self.device)
-
-            self.optimizer.zero_grad()
-            outputs = self.model(X_batch)
-            loss = self.criterion(outputs, y_batch)
-
-            loss.backward()
-            self.optimizer.step()
-
-            total_loss += loss.item()
-
-        return total_loss / len(train_loader)
-
-    def _validate(self, val_loader):
-        self.model.eval()
-        total_val_loss = 0
-
-        all_preds = []
-        all_probs = []
-        all_labels = []
-
-        with torch.no_grad():
-            for X_batch, y_batch in val_loader:
+            for X_batch, y_batch in self.train_loader:
                 X_batch, y_batch = X_batch.to(self.device), y_batch.to(self.device)
 
+                optimizer.zero_grad()
                 outputs = self.model(X_batch)
-                loss = self.criterion(outputs, y_batch)
+                loss = criterion(outputs, y_batch)
+                loss.backward()
+                optimizer.step()
 
-                total_val_loss += loss.item()
+                total_loss += loss.item()
 
-                probs = torch.exp(outputs).cpu().numpy()
+            val_loss, metrics = self.evaluate(criterion)
+
+            current_lr = optimizer.param_groups[0]['lr']
+
+            logger.info(f"Epoch {epoch}/{epochs} - Train Loss: {total_loss:.4f}, Val Loss: {val_loss:.4f}, LR: {current_lr:.6f}")
+            logger.info(f"Accuracy: {metrics['accuracy']:.4f}, F1-Score: {metrics['f1_score']:.4f}, AUC-ROC: {metrics['auc_roc']:.4f}")
+            logger.info(f"Confusion Matrix:\n{self._format_confusion_matrix(metrics['conf_matrix'])}")
+
+            if metrics['auc_roc'] > best_auc_roc:
+                best_auc_roc = metrics['auc_roc']
+                patience_counter = 0
+                torch.save(self.state_dict(), self.model_path)
+                logger.info("Best model saved based on highest AUC-ROC.")
+            else:
+                patience_counter += 1
+                if patience_counter >= self.patience:
+                    logger.info("Early stopping triggered.")
+                    break
+
+    def evaluate(self, criterion):
+        self.eval()
+        val_loss = 0
+        all_preds = []
+        all_labels = []
+        all_probs = []
+
+        with torch.no_grad():
+            for X_batch, y_batch in self.val_loader:
+                X_batch, y_batch = X_batch.to(self.device), y_batch.to(self.device)
+                outputs = self.model(X_batch)
+                loss = criterion(outputs, y_batch)
+                val_loss += loss.item()
+
+                probs = torch.softmax(outputs, dim=1).cpu().numpy()
                 preds = np.argmax(probs, axis=1)
 
-                all_probs.extend(probs)
                 all_preds.extend(preds)
                 all_labels.extend(y_batch.cpu().numpy())
+                all_probs.extend(probs)
 
         metrics = {
             'accuracy': accuracy_score(all_labels, all_preds),
             'f1_score': f1_score(all_labels, all_preds, average='weighted'),
-            'auc_roc': roc_auc_score(all_labels, np.array(all_probs), multi_class='ovr'),
+            'auc_roc': roc_auc_score(all_labels, all_probs, multi_class='ovr'),
             'conf_matrix': confusion_matrix(all_labels, all_preds)
         }
 
-        return total_val_loss / len(val_loader), metrics
+        return val_loss, metrics
 
-    def _save_model(self, filename):
-        path = os.path.join(self.model_dir, filename)
-        torch.save(self.model.state_dict(), path)
-        logger.info(f"Сохраняем модель в {path}")
+    def predict(self, X):
+        self.eval()
+        if isinstance(X, pd.DataFrame):
+            X = X.values
+
+        X_tensor = torch.tensor(X, dtype=torch.float32).to(self.device)
+
+        with torch.no_grad():
+            outputs = self.model(X_tensor)
+            probs = torch.softmax(outputs, dim=1).cpu().numpy()
+            preds = np.argmax(probs, axis=1)
+
+        return preds
+
