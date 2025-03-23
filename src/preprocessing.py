@@ -20,7 +20,7 @@ def df_fillna(df):
     logger.info("Пропуски заполнены")
     return df
 
-def split_problems(df):
+def split_problems(df, created_columns=True):
     """
     Функция для разделения строки с проблемами на отдельные проблемы,
     создания новых колонок для каждой проблемы и подсчета количества проблем.
@@ -34,8 +34,9 @@ def split_problems(df):
     logger.info(f'{unique_problems} - уникальные проблемы')
     
     # Создание новых колонок
-    for problem in unique_problems:
-        df[problem] = df['problems'].str.contains(problem, case=False)
+    if created_columns:
+        for problem in unique_problems:
+            df[problem] = df['problems'].str.contains(problem, case=False)
     
     # Подсчет количества проблем
     df['num_problems'] = df['problems_new'].apply(len)
@@ -71,7 +72,7 @@ def convert_to_bool(df):
     return df
 
 
-def encode_and_save_categorical(df, categorical_columns, model_path):
+def encode_and_save_categorical(df, categorical_columns, model_path, name_labe_encoders):
     """
     Преобразует категориальные признаки в числовые значения, сохраняет LabelEncoders.
 
@@ -94,7 +95,7 @@ def encode_and_save_categorical(df, categorical_columns, model_path):
     os.makedirs(model_path, exist_ok=True)
 
     # Save the encoders
-    with open(os.path.join(model_path, 'label_encoders.pkl'), 'wb') as f:
+    with open(os.path.join(model_path, name_labe_encoders), 'wb') as f:
         pickle.dump(label_encoders, f)
 
     return df, label_encoders
@@ -131,22 +132,24 @@ def load_and_encode_categorical(df, categorical_columns, model_path):
     return df
 
 
-def split_and_save(df, output_dir):
+def split_and_save(X, y, output_dir, size, name_train, name_test):
     """ 
     Рзделим данные на обучающую, валидационную и тестовую выборки и сохраним их в output_dir
     stratify=y - сохранение пропорции классов в выборках
     """
-    X = df.drop('health', axis=1)
-    y = df['health']
 
-    X_train, X_temp, y_train, y_temp = train_test_split(X, y, test_size=0.3, random_state=42, stratify=y)
-    X_val, X_test, y_val, y_test = train_test_split(X_temp, y_temp, test_size=0.5, random_state=42, stratify=y_temp)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=size, random_state=42, stratify=y)
+
+    X_train = pd.DataFrame(X_train, columns=X.columns)
+    X_test = pd.DataFrame(X_test, columns=X.columns)
+    y_train = pd.Series(y_train)
+    y_test = pd.Series(y_test)
 
     os.makedirs(output_dir, exist_ok=True)
-    X_train.assign(health=y_train).to_csv(f"{output_dir}/train.csv", index=False)
-    X_val.assign(health=y_val).to_csv(f"{output_dir}/val.csv", index=False)
-    X_test.assign(health=y_test).to_csv(f"{output_dir}/test.csv", index=False)
+    X_train.assign(health=y_train).to_csv(f"{output_dir}/{name_train}", index=False)
+    X_test.assign(health=y_test).to_csv(f"{output_dir}/{name_test}", index=False)
 
     logger.info("Data successfully saved to: %s", output_dir)
 
-    return X_train, X_val, X_test, y_train, y_val, y_test
+    return X_train, X_test, y_train, y_test
+

@@ -1,14 +1,16 @@
 import pandas as pd
-
+import numpy as np
+from src.utils import logger
+import re
+import os
 import torch
 import torch.nn as nn
 import torch.optim as optim
 import torch.nn.functional as F
 from torch.utils.data import DataLoader, TensorDataset
 from sklearn.metrics import accuracy_score, f1_score, roc_auc_score, confusion_matrix
-from src.utils import logger
 from sklearn.utils.class_weight import compute_class_weight
-import numpy as np
+import joblib
 
 class TabularNN(nn.Module):
     """
@@ -38,7 +40,10 @@ class TabularNN(nn.Module):
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
         self.input_dim = X_train.shape[1]
-        self.output_dim = len(np.unique(y_train))
+        self.unique_classes = np.unique(y_train)
+        self.output_dim = len(self.unique_classes)
+        logger.info(f"Unique classes during training: {self.unique_classes}")
+        logger.info(f"Output dimension during training: {self.output_dim}")
         self.hidden_dims = hidden_dims
         self.dropout = dropout
         self.patience = patience
@@ -73,7 +78,6 @@ class TabularNN(nn.Module):
 
     def _format_confusion_matrix(self, cm):
         return '\n'.join(['\t'.join(map(str, row)) for row in cm])
-
     def train_model(self, epochs=50, learning_rate=0.001, batch_size=64):
         class_weights = self._compute_class_weights(self.train_loader.dataset.tensors[1].numpy())
         criterion = nn.CrossEntropyLoss(weight=class_weights)
@@ -108,7 +112,15 @@ class TabularNN(nn.Module):
             if metrics['auc_roc'] > best_auc_roc:
                 best_auc_roc = metrics['auc_roc']
                 patience_counter = 0
-                torch.save(self.state_dict(), self.model_path)
+                # Save the entire save_dict, not just the state_dict
+                save_dict = {
+                    'model_state_dict': self.state_dict(),
+                    'input_dim': self.input_dim,
+                    'hidden_dims': self.hidden_dims,
+                    'output_dim': self.output_dim,
+                    'target_mapping': {int(k): int(v) for k, v in enumerate(self.unique_classes)}
+                }
+                torch.save(save_dict, self.model_path)
                 logger.info("Best model saved based on highest AUC-ROC.")
             else:
                 patience_counter += 1
@@ -159,4 +171,30 @@ class TabularNN(nn.Module):
             preds = np.argmax(probs, axis=1)
 
         return preds
+    
+    @classmethod
+    def load_model(cls, model_path, X_train, y_train, X_val, y_val):
+        """Загружает модель из файла с восстановлением структуры."""
+        checkpoint = torch.load(model_path)
 
+        # Восстанавливаем параметры
+        input_dim = checkpoint['input_dim']
+        hidden_dims = checkpoint['hidden_dims']
+        output_dim = checkpoint['output_dim']
+        target_mapping = checkpoint['target_mapping']  # Load target_mapping
+        
+        logger.info(f"Loading model with input_dim={input_dim}, hidden_dims={hidden_dims}, output_dim={output_dim}")
+        logger.info(f"Loaded target mapping: {target_mapping}")
+
+        # Инициализируем новую модель
+        model = cls(
+            X_train=X_train,
+            y_train=y_train,
+            X_val=X_val,
+            y_val=y_val,
+            hidden_dims=hidden_dims
+        )
+        model.load_state_dict(checkpoint['model_state_dict'])
+        model.eval()
+        logger.info(f"Model loaded successfully from {model_path}")
+        return model
