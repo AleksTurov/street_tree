@@ -179,3 +179,5 @@ cython_debug/
 *.tar.gz
 *.tgz
 *.tar.bz2
+/notebook/catboost_info
+notebook/catboost_info
