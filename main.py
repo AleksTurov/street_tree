@@ -28,19 +28,26 @@ loaded_model, inverse_target_mapping, label_encoders, scaler = downloader_model(
 logger.info("Модель успешно загружена!")
 
 @app.post("/predict_health/", response_model=List[dict])
-async def predict_health(tree_data_json: List[TreeData]):
+async def predict_health(tree_data_list: List[TreeData]):
     """
     Эндпоинт для получения предсказаний здоровья деревьев на основе JSON данных.
     """
     try:
-        # Извлекаем данные из объектов TreeData и создаем DataFrame
+        # Extract tree_id and data from TreeData objects
         data = []
-        for tree_data in tree_data_json:
+        tree_ids = []
+        for tree_data in tree_data_list:
+            tree_ids.append(tree_data.tree_id)
             data.append(tree_data.dict())
-        df = pd.DataFrame(data)
+
+        # Create DataFrame from data
+        df_reconstructed = pd.DataFrame(data, index=tree_ids)
+
+        # Set tree_id as index
+        df_reconstructed.index.name = 'tree_id'
 
         # Предварительная обработка
-        df = split_problems(df, created_columns=False)
+        df = split_problems(df_reconstructed, created_columns=False)
         df = load_and_encode_categorical(df, list(set(label_encoders.keys())), PATH_MODELS)
 
         # Убедимся, что все ожидаемые столбцы присутствуют
@@ -64,13 +71,14 @@ async def predict_health(tree_data_json: List[TreeData]):
 
         # Делаем предсказания
         predictions = loaded_model.predict(scaled_data)
+        probably = loaded_model.predict_proba(scaled_data)
         class_labels = [inverse_target_mapping[label] for label in predictions]
 
         # Добавляем предсказания в DataFrame
         scaled_df['predicted_health'] = class_labels
 
         # Преобразуем DataFrame в JSON ответ
-        result = scaled_df.to_dict(orient="records")
+        result = scaled_df[['']].to_dict(orient="records")
         return result
 
     except Exception as e:
