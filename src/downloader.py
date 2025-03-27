@@ -1,7 +1,12 @@
 
 import pandas as pd
 from src.config import PATH_MODELS, PATH_PROCESSED
-
+import os, sys
+import joblib
+import torch
+from src.modeling import TabularNN
+from src.utils import logger
+import numpy as np
 
 def downloader_model(PATH_MODELS):
     # Пути к моделям и энкодерам
