@@ -171,7 +171,20 @@ class TabularNN(nn.Module):
             preds = np.argmax(probs, axis=1)
 
         return preds
-    
+    def predict_proba(self, X):
+        """Возвращает вероятности классов для входных данных."""
+        self.eval()
+        if isinstance(X, pd.DataFrame):
+            X = X.values
+
+        X_tensor = torch.tensor(X, dtype=torch.float32).to(self.device)
+
+        with torch.no_grad():
+            outputs = self.model(X_tensor)
+            probs = torch.softmax(outputs, dim=1).cpu().numpy()
+
+        return probs
+
     @classmethod
     def load_model(cls, model_path):
         """Загружает модель из файла с восстановлением структуры."""
@@ -196,3 +209,4 @@ class TabularNN(nn.Module):
         model.eval()
         logger.info(f"Model loaded successfully from {model_path}")
         return model
+    
