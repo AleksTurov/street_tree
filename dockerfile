@@ -5,7 +5,7 @@ FROM python:3.12-slim
 WORKDIR /app
 
 # Копирование и установка зависимостей
-COPY requirements-docker.txt requirements-docker.txt
+COPY requirements-docker.txt requirements.txt
 RUN pip install --upgrade pip && \
     pip install -r requirements-docker.txt
 
@@ -14,7 +14,7 @@ COPY src/ /app/src/
 COPY main.py /app/
 
 # Устанавливаем зависимости
-RUN pip install --no-cache-dir -r requirements-docker.txt
+RUN pip install --no-cache-dir -r requirements.txt
 
 # Открываем порт
 EXPOSE 8000
