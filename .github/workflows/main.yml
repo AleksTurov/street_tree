@@ -56,8 +56,16 @@ jobs:
       run: |
         lt --port 8000 --subdomain my-custom-subdomain > localtunnel_url.txt &
         sleep 5
-        LT_URL=$(cat localtunnel_url.txt)
+    
+        # Проверяем, что URL появился
+        while ! grep -q "https://" localtunnel_url.txt; do
+          sleep 2
+        done
+    
+        # Читаем URL
+        LT_URL=$(cat localtunnel_url.txt | grep "https://")
         echo "LT_URL=${LT_URL}" >> $GITHUB_ENV
+    
 
     - name: Output Swagger UI URL
       run: |
