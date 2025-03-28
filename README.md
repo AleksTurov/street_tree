@@ -124,7 +124,7 @@ street_tree/
 
 1. Установите зависимости:
    ```bash
-   pip install -r requirements.txt
+   pip install -r requirements_venv.txt
    ```
 
 2. Запустите сервер FastAPI:
