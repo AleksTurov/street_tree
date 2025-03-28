@@ -38,6 +38,10 @@ jobs:
     - name: Stop previous Docker Compose
       run: docker-compose down || true
 
+    - name: Set environment variables
+      run: |
+        echo "DOCKER_IMAGE=${{ secrets.DOCKER_USERNAME }}/my-image:${{ github.sha }}" >> $GITHUB_ENV
+
     - name: Start Docker Compose
       run: docker-compose up -d
 

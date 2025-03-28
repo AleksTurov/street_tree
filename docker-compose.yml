@@ -1,8 +1,6 @@
 version: "3.8"
 services:
   app:
-    image: ${{ secrets.DOCKER_USERNAME }}/my-image:${{ github.sha }}
+    image: ${DOCKER_IMAGE}
     ports:
       - "8000:8000"
-
-
