@@ -55,6 +55,10 @@ jobs:
         sudo mv ngrok /usr/local/bin
         sudo chmod +x /usr/local/bin/ngrok
 
+    - name: Update ngrok to the latest version
+      run: |
+        ngrok update
+
     - name: Configure ngrok
       run: |
         /usr/local/bin/ngrok authtoken ${{ secrets.NGROK_AUTH_TOKEN }}
@@ -62,7 +66,7 @@ jobs:
     - name: Run ngrok
       run: |
         /usr/local/bin/ngrok http 8000 & # Replace 8000 with the port your app is running on
-        sleep 5
+        sleep 10
         curl http://localhost:4040/api/tunnels
 
     - name: Get ngrok URL
