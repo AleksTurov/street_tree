@@ -34,7 +34,7 @@ class TabularNN(nn.Module):
 
     Эта архитектура подходит для табличных данных с несколькими классами и эффективно обрабатывает дисбаланс классов.
     """
-    def __init__(self, X_train, y_train, X_val, y_val, hidden_dims, dropout=0.3, patience=5, model_path='best_model.pth'):
+    def __init__(self, X_train, y_train, X_val, y_val, hidden_dims, dropout=0.3, patience=20, model_path='best_model.pth'):
         super(TabularNN, self).__init__()
 
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')

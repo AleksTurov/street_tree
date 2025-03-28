@@ -14,6 +14,7 @@ from src.utils import logger
 from src.model import TreeData, PredictionResponse
 from src.preprocessing import load_and_encode_categorical, split_problems
 from sklearn.preprocessing import StandardScaler
+import uvicorn
 
 # Создаем FastAPI приложение
 app = FastAPI(
@@ -82,6 +83,5 @@ async def predict_health(tree_data_list: List[TreeData]):
         return [{"error": str(e)}]
 
 if __name__ == "__main__":
-    import uvicorn
-    print("FastAPI is starting...")
+    logger.info("FastAPI is starting...")
     uvicorn.run("main:app", host="0.0.0.0", port=8000, log_level="info", reload=True)

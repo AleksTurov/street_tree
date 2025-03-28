@@ -100,6 +100,7 @@ class TreeData(BaseModel):
         df = df[list(columns)]
         data_json = df.to_dict(orient='records')  # Convert to list of dictionaries
         return [cls(**data) for data in data_json]  # Convert to TreeData objects
+    
 class PredictionResponse(BaseModel):
     tree_id: int = Field(..., description="Идентификатор дерева.")
     predictions: str = Field(..., description="Предсказанный класс.")
