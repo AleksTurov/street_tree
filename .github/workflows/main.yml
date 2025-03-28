@@ -61,7 +61,7 @@ jobs:
 
     - name: Run ngrok
       run: |
-        /usr/local/bin/ngrok http 8000 &
+        /usr/local/bin/ngrok http 8000 & # Replace 8000 with the port your app is running on
         sleep 5
         curl http://localhost:4040/api/tunnels
 
@@ -70,9 +70,9 @@ jobs:
       run: |
         sleep 5
         NGROK_URL=$(curl -s localhost:4040/api/tunnels | jq -r '.tunnels[0].public_url')
-        echo "::set-output name=url::$NGROK_URL"
-        echo "NGROK_URL: $NGROK_URL"
+        echo "NGROK_URL=${NGROK_URL}" >> $GITHUB_ENV
+        echo "NGROK_URL: ${NGROK_URL}"
 
     - name: Output Swagger UI URL
       run: |
-        echo "Swagger UI URL: ${{ steps.ngrok.outputs.url }}/docs"
+        echo "Swagger UI URL: ${{ env.NGROK_URL }}/docs"
