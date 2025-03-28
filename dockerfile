@@ -7,14 +7,11 @@ WORKDIR /app
 # Копирование и установка зависимостей
 COPY requirements-docker.txt requirements.txt
 RUN pip install --upgrade pip && \
-    pip install -r requirements-docker.txt
+    pip install --no-cache-dir -r requirements.txt
 
 # Копирование проекта
 COPY src/ /app/src/
 COPY main.py /app/
-
-# Устанавливаем зависимости
-RUN pip install --no-cache-dir -r requirements.txt
 
 # Открываем порт
 EXPOSE 8000
