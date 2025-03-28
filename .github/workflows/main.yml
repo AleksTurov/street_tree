@@ -54,10 +54,7 @@ jobs:
         unzip ngrok-stable-linux-amd64.zip
         sudo mv ngrok /usr/local/bin
         sudo chmod +x /usr/local/bin/ngrok
-
-    - name: Update ngrok to the latest version
-      run: |
-        ngrok update
+        sudo ngrok update
 
     - name: Configure ngrok
       run: |
@@ -65,7 +62,7 @@ jobs:
 
     - name: Run ngrok
       run: |
-        /usr/local/bin/ngrok http 8000 & # Replace 8000 with the port your app is running on
+        /usr/local/bin/ngrok http 8000 & # Ensure this port matches your app's port
         sleep 10
         curl http://localhost:4040/api/tunnels
 
