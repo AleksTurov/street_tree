@@ -59,7 +59,7 @@ jobs:
 
     - name: Run ngrok
       run: |
-        ./ngrok http 8000 &
+        ./ngrok http 8000 & # здесь предполагается, что FastAPI работает на порту 8000
         sleep 5
         curl http://localhost:4040/api/tunnels
 
@@ -71,11 +71,6 @@ jobs:
         echo "::set-output name=url::$NGROK_URL"
         echo "NGROK_URL: $NGROK_URL"
 
-    - name: Test API
+    - name: Output Swagger UI URL
       run: |
-        echo "Ngrok URL: ${{ steps.ngrok.outputs.url }}"
-        if [ -z "${{ steps.ngrok.outputs.url }}" ]; then
-          echo "Ngrok URL is empty. Skipping API test."
-        else
-          curl -X POST -H "Content-Type: application/json" -d '[{"tree_id": 536325, "block_id": 415591, "tree_dbh": 56, "curb_loc": 0, "spc_latin": "Fraxinus", "steward": "None", "guards": "Unsure", "sidewalk": 0, "user_type": "NYC Parks Staff", "problems": "NoProblem", "root_stone": 0, "root_grate": 0, "root_other": 0, "trunk_wire": 0, "trnk_light": 0, "trnk_other": 0, "brch_light": 0, "brch_shoe": 0, "brch_other": 0, "postcode": 10306, "borough": "Staten Island", "cncldist": 50, "st_assem": 62, "st_senate": 24, "nta": "SI24", "boro_ct": 5027900, "latitude": 40.571808, "longitude": -74.144251}]' "${{ steps.ngrok.outputs.url }}/predict_health/"
-        fi
+        echo "Swagger UI URL: ${{ steps.ngrok.outputs.url }}/docs"
