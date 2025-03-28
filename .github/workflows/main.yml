@@ -48,11 +48,17 @@ jobs:
     - name: Wait for API to be available
       run: sleep 10
 
-    - name: Install ngrok
+
+    - name: Download and Install ngrok
       run: |
-        wget https://bin.equinox.io/c/4VmDzA7iaHb/ngrok-stable-linux-amd64.zip
-        unzip ngrok-stable-linux-amd64.zip
-    
+          wget https://bin.equinox.io/c/4VmDzA7iaHb/ngrok-stable-linux-amd64.zip
+          unzip ngrok-stable-linux-amd64.zip
+          sudo mv ngrok /usr/local/bin
+      
+    - name: Authenticate ngrok
+      run: |
+          ./ngrok authtoken ${{ secrets.NGROK_AUTH_TOKEN }}
+      
     - name: Configure ngrok
       run: |
           ./ngrok authtoken ${{ secrets.NGROK_AUTH_TOKEN }}
