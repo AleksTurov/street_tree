@@ -48,32 +48,17 @@ jobs:
     - name: Wait for API to be available
       run: sleep 10
 
-    - name: Download and Install ngrok
-      run: |
-        wget https://bin.equinox.io/c/4VmDzA7iaHb/ngrok-stable-linux-amd64.zip
-        unzip ngrok-stable-linux-amd64.zip
-        sudo mv ngrok /usr/local/bin
-        sudo chmod +x /usr/local/bin/ngrok
-        sudo ngrok update
+    - name: Install Localtunnel
+      run: npm install -g localtunnel
 
-    - name: Configure ngrok
+    - name: Run Localtunnel
+      id: localtunnel
       run: |
-        /usr/local/bin/ngrok authtoken ${{ secrets.NGROK_AUTH_TOKEN }}
-
-    - name: Run ngrok
-      run: |
-        /usr/local/bin/ngrok http 8000 & # Ensure this port matches your app's port
-        sleep 10
-        curl http://localhost:4040/api/tunnels
-
-    - name: Get ngrok URL
-      id: ngrok
-      run: |
+        lt --port 8000 --subdomain my-custom-subdomain > localtunnel_url.txt &
         sleep 5
-        NGROK_URL=$(curl -s localhost:4040/api/tunnels | jq -r '.tunnels[0].public_url')
-        echo "NGROK_URL=${NGROK_URL}" >> $GITHUB_ENV
-        echo "NGROK_URL: ${NGROK_URL}"
+        LT_URL=$(cat localtunnel_url.txt)
+        echo "LT_URL=${LT_URL}" >> $GITHUB_ENV
 
     - name: Output Swagger UI URL
       run: |
-        echo "Swagger UI URL: ${{ env.NGROK_URL }}/docs"
+        echo "Swagger UI URL: ${{ env.LT_URL }}/docs"
