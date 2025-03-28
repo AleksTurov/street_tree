@@ -5,7 +5,7 @@ FROM python:3.12-slim
 WORKDIR /app
 
 # Копирование и установка зависимостей
-COPY requirements.txt requirements-docker.txt
+COPY requirements-docker.txt requirements-docker.txt
 RUN pip install --upgrade pip && \
     pip install -r requirements-docker.txt
 
