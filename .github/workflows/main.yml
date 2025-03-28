@@ -56,10 +56,16 @@ jobs:
       run: |
         lt --port 8000 --subdomain my-custom-subdomain > localtunnel_url.txt &
         sleep 5
-        # Удаляем лишний текст из файла
         LT_URL=$(sed 's/your url is: //g' localtunnel_url.txt)
         echo "LT_URL=${LT_URL}" >> $GITHUB_ENV
+
+    - name: Get LocalTunnel Password
+      run: |
+        curl https://loca.lt/mytunnelpassword > tunnel_password.txt
+        TUNNEL_PASSWORD=$(cat tunnel_password.txt)
+        echo "TUNNEL_PASSWORD=${TUNNEL_PASSWORD}" >> $GITHUB_ENV
 
     - name: Output Swagger UI URL
       run: |
         echo "Swagger UI URL: ${{ env.LT_URL }}/docs"
+        echo "LocalTunnel Password: ${{ env.TUNNEL_PASSWORD }}"
