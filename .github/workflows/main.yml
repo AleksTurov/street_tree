@@ -35,18 +35,22 @@ jobs:
       run: |
         docker push ${{ secrets.DOCKER_USERNAME }}/my-image:${{ github.sha }}
 
+    - name: Stop previous Docker Compose
+      run: docker-compose down || true
+
     - name: Set environment variables
       run: |
         echo "DOCKER_IMAGE=${{ secrets.DOCKER_USERNAME }}/my-image:${{ github.sha }}" >> $GITHUB_ENV
-
-    - name: Stop previous Docker Compose
-      run: docker-compose down || true
 
     - name: Start Docker Compose
       run: docker-compose up -d
 
     - name: Wait for API to be available
       run: sleep 10
+
+    # Добавляем задержку перед запуском localtunnel
+    - name: Wait for server to start
+      run: sleep 30
 
     - name: Install Localtunnel
       run: npm install -g localtunnel
