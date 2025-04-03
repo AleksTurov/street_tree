@@ -72,7 +72,7 @@ def convert_to_bool(df):
     return df
 
 
-def encode_and_save_categorical(df, categorical_columns, model_path, name_labe_encoders):
+def encode_and_save_categorical(df, categorical_columns, model_path, name_labe_encoders='label_encoders.pkl'):
     """
     Преобразует категориальные признаки в числовые значения, сохраняет LabelEncoders.
 
