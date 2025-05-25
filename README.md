@@ -1,62 +1,67 @@
-# street_tree
+ 🌳 street_tree
 
-Построить DL-модель для классификации состояния дерева (Good/Fair/Poor) по данным из NY 2015 Street Tree Census.
+Build a deep learning model to classify tree health (`Good`, `Fair`, `Poor`) using data from the NYC 2015 Street Tree Census.
 
-## Описание проекта
+---
 
-Данный проект включает разработку и обучение модели глубокого обучения для классификации состояния деревьев на основе данных о деревьях, собранных в рамках переписи деревьев Нью-Йорка в 2015 году. Модель предсказывает одно из трех состояний дерева:
-- **Good** (Хорошее)
-- **Fair** (Среднее)
-- **Poor** (Плохое)
+## 📌 Project Description
 
-## API для предсказания здоровья деревьев
+This project involves the development and training of a deep learning model to classify the health condition of street trees based on data from the 2015 New York City Street Tree Census.  
+The model predicts one of the following conditions:
+- **Good**
+- **Fair**
+- **Poor**
 
-### Эндпоинт: `/predict_health/`
+---
 
-API предоставляет возможность отправить данные о деревьях в формате JSON и получить предсказания состояния деревьев.
+## 🧠 Tree Health Prediction API
 
-- **Метод:** `POST`
-- **URL:** `http://127.0.0.1:8000/predict_health/`
-- **Описание:** Эндпоинт для получения предсказаний здоровья деревьев на основе JSON данных.
+### Endpoint: `/predict_health/`
 
-### Пример тела запроса (Request Body):
+The API allows you to send tree data in JSON format and receive a prediction of tree health.
+
+- **Method:** `POST`  
+- **URL:** `http://127.0.0.1:8000/predict_health/`  
+- **Description:** Returns predicted health condition based on input JSON.
+
+### 🔻 Sample Request Body:
 ```json
 [
   {
-    "tree_id": 536325, 
-    "block_id": 415591, 
-    "tree_dbh": 56, 
-    "curb_loc": 0, 
-    "spc_latin": "Fraxinus", 
-    "steward": "None", 
-    "guards": "Unsure", 
-    "sidewalk": 0, 
-    "user_type": "NYC Parks Staff", 
-    "problems": "NoProblem", 
-    "root_stone": 0, 
-    "root_grate": 0, 
-    "root_other": 0, 
-    "trunk_wire": 0, 
-    "trnk_light": 0, 
-    "trnk_other": 0, 
-    "brch_light": 0, 
-    "brch_shoe": 0, 
-    "brch_other": 0, 
-    "postcode": 10306, 
-    "borough": "Staten Island", 
-    "cncldist": 50, 
-    "st_assem": 62, 
-    "st_senate": 24, 
-    "nta": "SI24", 
-    "boro_ct": 5027900,             
-    "latitude": 40.571808, 
+    "tree_id": 536325,
+    "block_id": 415591,
+    "tree_dbh": 56,
+    "curb_loc": 0,
+    "spc_latin": "Fraxinus",
+    "steward": "None",
+    "guards": "Unsure",
+    "sidewalk": 0,
+    "user_type": "NYC Parks Staff",
+    "problems": "NoProblem",
+    "root_stone": 0,
+    "root_grate": 0,
+    "root_other": 0,
+    "trunk_wire": 0,
+    "trnk_light": 0,
+    "trnk_other": 0,
+    "brch_light": 0,
+    "brch_shoe": 0,
+    "brch_other": 0,
+    "postcode": 10306,
+    "borough": "Staten Island",
+    "cncldist": 50,
+    "st_assem": 62,
+    "st_senate": 24,
+    "nta": "SI24",
+    "boro_ct": 5027900,
+    "latitude": 40.571808,
     "longitude": -74.14425163
   }
 ]
-```
-
-### Ответ сервиса в виде:
-```json
+🔺 Sample Response:
+json
+Копировать
+Редактировать
 [
   {
     "tree_id": 536325,
@@ -66,78 +71,77 @@ API предоставляет возможность отправить дан�
     "name_model": "TreeHealthModel"
   }
 ]
-```
+Response Fields:
+tree_id: Unique tree identifier.
 
-### Поля ответа:
-- **`tree_id`**: Уникальный идентификатор дерева.
-- **`predictions`**: Предсказанное состояние дерева (`Good`, `Fair`, `Poor`).
-- **`probably`**: Вероятности для каждого класса в формате `[Poor, Fair, Good]`.
-- **`class_labels`**: Название класса, соответствующее предсказанию.
-- **`name_model`**: Название модели, использованной для предсказания.
+predictions: Predicted tree condition (Good, Fair, Poor).
 
-### Пример интерпретации:
-Для дерева с `tree_id = 536325` модель предсказала состояние `Good` с вероятностями:
-- `Poor`: 10%
-- `Fair`: 30%
-- `Good`: 60%
+probably: Class probabilities in the order [Poor, Fair, Good].
 
----
+class_labels: Label of the predicted class.
 
-## Структура проекта
+name_model: Name of the model used for prediction.
 
-```plaintext
+Interpretation Example:
+For the tree with tree_id = 536325, the model predicted:
+
+Poor: 10%
+
+Fair: 30%
+
+Good: 60%
+
+📁 Project Structure
+plaintext
+Копировать
+Редактировать
 street_tree/
-├── data/                     # Данные проекта
-│   ├── raw/                  # Сырые данные
-│   ├── processed/            # Обработанные данные
-├── models/                   # Сохраненные модели
-├── notebook/                 # Jupyter Notebook для анализа данных
-│   ├── eda.ipynb             # Исследовательский анализ данных (EDA)
-│   ├── test_api.ipynb        # Тестирование API
-├── src/                      # Исходный код проекта
-│   ├── config.py             # Конфигурация проекта
-│   ├── downloader.py         # Загрузка данных и моделей
-│   ├── modeling.py           # Определение модели
-│   ├── preprocessing.py      # Предобработка данных
-│   ├── utils.py              # Утилиты
-│   ├── model.py              # Определение Pydantic моделей
-├── main.py                   # Основной файл для запуска FastAPI
-├── README.md                 # Документация проекта
-```
+├── data/                     # Project data
+│   ├── raw/                  # Raw data
+│   ├── processed/            # Processed data
+├── models/                   # Trained model files
+├── notebook/                 # Jupyter notebooks
+│   ├── eda.ipynb             # Exploratory Data Analysis (EDA)
+│   ├── test_api.ipynb        # API testing
+├── src/                      # Project source code
+│   ├── config.py             # Configuration
+│   ├── downloader.py         # Data/model loading scripts
+│   ├── modeling.py           # Model architecture definition
+│   ├── preprocessing.py      # Data preprocessing scripts
+│   ├── utils.py              # Utility functions
+│   ├── model.py              # Pydantic models for FastAPI
+├── main.py                   # Main file to run the FastAPI app
+├── README.md                 # Project documentation
+Key Files:
+notebook/eda.ipynb: EDA Notebook
+Contains exploratory analysis and visualizations.
 
-### Описание ключевых файлов:
-- **`notebook/eda.ipynb`**: [Ссылка на файл](notebook/eda.ipynb)  
-  Содержит исследовательский анализ данных (EDA), включая визуализацию и обработку данных.
-  
-- **`notebook/test_api.ipynb`**: [Ссылка на файл](notebook/test_api.ipynb)  
-  Содержит тестирование API, включая отправку запросов и анализ ответов.
+notebook/test_api.ipynb: API Test Notebook
+Demonstrates how to send requests to the API and interpret responses.
 
-- **`main.py`**: Основной файл для запуска FastAPI сервера. Содержит реализацию эндпоинта `/predict_health/`.
+main.py: Launches the FastAPI server and defines the /predict_health/ endpoint.
 
-- **`src/modeling.py`**: Определение архитектуры модели глубокого обучения.
+src/modeling.py: Defines the deep learning model.
 
-- **`src/preprocessing.py`**: Скрипты для обработки данных перед обучением модели.
+src/preprocessing.py: Handles data cleaning and preparation.
 
----
+🚀 How to Run the Project
+Install dependencies:
 
-## Как запустить проект
+bash
+Копировать
+Редактировать
+pip install -r requirements_venv.txt
+Start the FastAPI server:
 
-1. Установите зависимости:
-   ```bash
-   pip install -r requirements_venv.txt
-   ```
+bash
+Копировать
+Редактировать
+uvicorn main:app --reload
+Open the API documentation in your browser:
+http://127.0.0.1:8000/docs
 
-2. Запустите сервер FastAPI:
-   ```bash
-   uvicorn main:app --reload
-   ```
+✅ Conclusion
+This project provides an API for predicting the health condition of trees based on structured census data. The model shows promising results and can be improved further by refining the dataset, enhancing the model, and applying more advanced machine learning techniques.
 
-3. Откройте Swagger UI для тестирования API:
-   [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
-
----
-
-## Заключение
-
-Проект предоставляет API для предсказания состояния деревьев на основе данных. Модель имеет потенциал для улучшения, и дальнейшая работа может быть направлена на улучшение качества данных, оптимизацию модели и использование более сложных методов машинного обучения.
-Качество модели AUC-ROC = 0.703 на ОТП
+Model AUC-ROC on out-of-time (OOT) sample: 0.703
