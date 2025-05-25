@@ -1,4 +1,5 @@
- 🌳 street_tree
+
+# 🌳 street_tree
 
 Build a deep learning model to classify tree health (`Good`, `Fair`, `Poor`) using data from the NYC 2015 Street Tree Census.
 
@@ -6,7 +7,8 @@ Build a deep learning model to classify tree health (`Good`, `Fair`, `Poor`) usi
 
 ## 📌 Project Description
 
-This project involves the development and training of a deep learning model to classify the health condition of street trees based on data from the 2015 New York City Street Tree Census.  
+This project involves the development and training of a deep learning model to classify the health condition of street trees based on data from the 2015 New York City Street Tree Census.
+
 The model predicts one of the following conditions:
 - **Good**
 - **Fair**
@@ -22,7 +24,7 @@ The API allows you to send tree data in JSON format and receive a prediction of 
 
 - **Method:** `POST`  
 - **URL:** `http://127.0.0.1:8000/predict_health/`  
-- **Description:** Returns predicted health condition based on input JSON.
+- **Description:** Returns the predicted health condition based on input JSON.
 
 ### 🔻 Sample Request Body:
 ```json
@@ -58,10 +60,10 @@ The API allows you to send tree data in JSON format and receive a prediction of 
     "longitude": -74.14425163
   }
 ]
-🔺 Sample Response:
-json
-Копировать
-Редактировать
+```
+
+### 🔺 Sample Response:
+```json
 [
   {
     "tree_id": 536325,
@@ -71,30 +73,26 @@ json
     "name_model": "TreeHealthModel"
   }
 ]
-Response Fields:
-tree_id: Unique tree identifier.
+```
 
-predictions: Predicted tree condition (Good, Fair, Poor).
+### Response Fields:
+- `tree_id`: Unique tree identifier.
+- `predictions`: Predicted tree condition (`Good`, `Fair`, `Poor`).
+- `probably`: Class probabilities in the order `[Poor, Fair, Good]`.
+- `class_labels`: Label of the predicted class.
+- `name_model`: Name of the model used for prediction.
 
-probably: Class probabilities in the order [Poor, Fair, Good].
+### 📈 Interpretation Example:
+For the tree with `tree_id = 536325`, the model predicted:
+- **Poor**: 10%  
+- **Fair**: 30%  
+- **Good**: 60%
 
-class_labels: Label of the predicted class.
+---
 
-name_model: Name of the model used for prediction.
+## 📁 Project Structure
 
-Interpretation Example:
-For the tree with tree_id = 536325, the model predicted:
-
-Poor: 10%
-
-Fair: 30%
-
-Good: 60%
-
-📁 Project Structure
-plaintext
-Копировать
-Редактировать
+```
 street_tree/
 ├── data/                     # Project data
 │   ├── raw/                  # Raw data
@@ -112,36 +110,37 @@ street_tree/
 │   ├── model.py              # Pydantic models for FastAPI
 ├── main.py                   # Main file to run the FastAPI app
 ├── README.md                 # Project documentation
-Key Files:
-notebook/eda.ipynb: EDA Notebook
-Contains exploratory analysis and visualizations.
+```
 
-notebook/test_api.ipynb: API Test Notebook
-Demonstrates how to send requests to the API and interpret responses.
+### 🔍 Key Files:
+- `notebook/eda.ipynb`: Exploratory Data Analysis notebook.
+- `notebook/test_api.ipynb`: Notebook for testing the API.
+- `main.py`: Launches the FastAPI server and defines the `/predict_health/` endpoint.
+- `src/modeling.py`: Defines the deep learning model architecture.
+- `src/preprocessing.py`: Prepares and processes input data.
 
-main.py: Launches the FastAPI server and defines the /predict_health/ endpoint.
+---
 
-src/modeling.py: Defines the deep learning model.
+## 🚀 How to Run the Project
 
-src/preprocessing.py: Handles data cleaning and preparation.
+1. **Install dependencies:**
+   ```bash
+   pip install -r requirements_venv.txt
+   ```
 
-🚀 How to Run the Project
-Install dependencies:
+2. **Start the FastAPI server:**
+   ```bash
+   uvicorn main:app --reload
+   ```
 
-bash
-Копировать
-Редактировать
-pip install -r requirements_venv.txt
-Start the FastAPI server:
+3. **Open the API docs in your browser:**
+   [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
 
-bash
-Копировать
-Редактировать
-uvicorn main:app --reload
-Open the API documentation in your browser:
-http://127.0.0.1:8000/docs
+---
 
-✅ Conclusion
-This project provides an API for predicting the health condition of trees based on structured census data. The model shows promising results and can be improved further by refining the dataset, enhancing the model, and applying more advanced machine learning techniques.
+## ✅ Conclusion
 
-Model AUC-ROC on out-of-time (OOT) sample: 0.703
+This project provides an API for predicting the health condition of trees using structured census data.  
+The model demonstrates promising performance and can be further improved by refining the data, enhancing the architecture, and exploring advanced machine learning techniques.
+
+**Model AUC-ROC on out-of-time (OOT) sample:** `0.703`
